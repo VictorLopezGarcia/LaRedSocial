@@ -5,9 +5,9 @@ import java.util.TreeSet;
 
 public class VideoPost extends Post{
 
-    private String quality;
+    private final String quality;
 
-    private int duration;
+    private final int duration;
 
     public VideoPost(String title, String quality, int duration, Usuario user) {
         super(title, user);
@@ -31,16 +31,8 @@ public class VideoPost extends Post{
         return quality;
     }
 
-    public void setQuality(String quality) {
-        this.quality = quality;
-    }
-
     public int getDuration() {
         return duration;
-    }
-
-    public void setDuration(int duration) {
-        this.duration = duration;
     }
 
     @Override
