@@ -1,14 +1,16 @@
 package module;
 
+import Utils.Utils;
+
 import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 
 public class Comentario implements Comparable<Comentario>{
 
-    private Usuario owner;
-    private String text;
-    private Date date;
+    private final Usuario owner;
+    private final String text;
+    private final Date date;
 
     public Comentario(String text, Usuario owner) {
         this.owner = owner;
@@ -26,29 +28,12 @@ public class Comentario implements Comparable<Comentario>{
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
-    }
-
     public Usuario getOwner() {
         return owner;
     }
-
-    public void setOwner(Usuario owner) {
-        this.owner = owner;
-    }
-
     @Override
     public int compareTo(Comentario o) {
-        int cmp = this.date.compareTo(o.date);
+        int cmp = o.date.compareTo(this.date);
         if (cmp == 0) {
             cmp = this.getText().compareTo(o.getText());
         }
@@ -57,7 +42,7 @@ public class Comentario implements Comparable<Comentario>{
 
     @Override
     public String toString() {
-        return "("+ date +") " + owner + ": " + text;
+        return owner + ", "+  Utils.formatFechaEspecial(date) + ": " + text;
     }
 
     @Override

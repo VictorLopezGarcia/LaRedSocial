@@ -4,7 +4,7 @@ import java.util.Date;
 import java.util.TreeSet;
 
 public class ImagePost extends Post{
-    private String imageUrl;
+    private final String imageUrl;
 
     public ImagePost(String title, String imageUrl, Usuario user) {
         super(title, user);
@@ -24,13 +24,8 @@ public class ImagePost extends Post{
     public String getImageUrl() {
         return imageUrl;
     }
-
-    public void setImageUrl(String imageUrl) {
-        this.imageUrl = imageUrl;
-    }
-
     @Override
     public String getParam() {
-        return "Imagen: \n" + this.getImageUrl()+ "\n";
+        return "Imagen: \n" + this.getImageUrl();
     }
 }

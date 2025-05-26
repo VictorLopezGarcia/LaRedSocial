@@ -1,12 +1,11 @@
 package module;
 
 import java.util.Date;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class TextPost extends Post{
 
-    private String text;
+    private final String text;
 
     public TextPost(String title, String text, Usuario user) {
         super(title, user);
@@ -27,12 +26,8 @@ public class TextPost extends Post{
         return text;
     }
 
-    public void setText(String text) {
-        this.text = text;
-    }
-
     @Override
     public String getParam() {
-        return "Texto: \n" + this.getText()+ "\n";
+        return "Texto: \n" + this.getText();
     }
 }

@@ -3,9 +3,8 @@ package Utils;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class Utils {
 
@@ -368,5 +367,44 @@ public class Utils {
      */
     public static boolean checkSelection(int i, int size) {
         return (i >= 1) && (i <= size);
+    }
+    /**
+     * Formats a date to a special string representation based on the current date.
+     * It returns "Hoy" for today, "Ayer" for yesterday, the day of the week for
+     * dates within the current week, and "dd/MM/yyyy" for all other dates.
+     *
+     * @param date The date to format.
+     * @return A formatted string representing the date.
+     */
+    public static String formatFechaEspecial(Date date) {
+        Calendar cal = Calendar.getInstance();
+        Calendar inputCal = Calendar.getInstance();
+        inputCal.setTime(date);
+
+        // Hoy
+        if (cal.get(Calendar.YEAR) == inputCal.get(Calendar.YEAR) &&
+                cal.get(Calendar.DAY_OF_YEAR) == inputCal.get(Calendar.DAY_OF_YEAR)) {
+            return "Hoy";
+        }
+
+        // Ayer
+        cal.add(Calendar.DAY_OF_YEAR, -1);
+        if (cal.get(Calendar.YEAR) == inputCal.get(Calendar.YEAR) &&
+                cal.get(Calendar.DAY_OF_YEAR) == inputCal.get(Calendar.DAY_OF_YEAR)) {
+            return "Ayer";
+        }
+
+        // Esta semana
+        cal = Calendar.getInstance();
+        int semanaActual = cal.get(Calendar.WEEK_OF_YEAR);
+        int semanaInput = inputCal.get(Calendar.WEEK_OF_YEAR);
+        if (cal.get(Calendar.YEAR) == inputCal.get(Calendar.YEAR) && semanaActual == semanaInput) {
+            SimpleDateFormat sdf = new SimpleDateFormat("EEEE", new Locale("es", "ES"));
+            return sdf.format(date);
+        }
+
+        // Otro caso
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        return sdf.format(date);
     }
 }
