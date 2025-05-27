@@ -1,6 +1,7 @@
-package module;
+package model;
 
 import Utils.Utils;
+import controller.DataController;
 
 import java.time.Instant;
 import java.util.Date;
@@ -8,18 +9,21 @@ import java.util.Objects;
 
 public class Comentario implements Comparable<Comentario>{
 
-    private final Usuario owner;
+    private final int ownerId;
+    private final int postId;
     private final String text;
     private final Date date;
 
-    public Comentario(String text, Usuario owner) {
-        this.owner = owner;
+    public Comentario(int ownerId, int postId, String text) {
+        this.ownerId = ownerId;
+        this.postId = postId;
         this.text = text;
         this.date = Date.from(Instant.now());
     }
 
-    public Comentario(String text, Date date, Usuario owner) {
-        this.owner = owner;
+    public Comentario(int ownerId, int postId, String text, Date date) {
+        this.ownerId = ownerId;
+        this.postId = postId;
         this.text = text;
         this.date = date;
     }
@@ -28,9 +32,6 @@ public class Comentario implements Comparable<Comentario>{
         return text;
     }
 
-    public Usuario getOwner() {
-        return owner;
-    }
     @Override
     public int compareTo(Comentario o) {
         int cmp = o.date.compareTo(this.date);
@@ -42,18 +43,26 @@ public class Comentario implements Comparable<Comentario>{
 
     @Override
     public String toString() {
-        return owner + ", "+  Utils.formatFechaEspecial(date) + ": " + text;
+        return DataController.getInstance().gerUserNameById(ownerId) + ", "+  Utils.formatFechaEspecial(date) + ": " + text;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Comentario that = (Comentario) o;
-        return Objects.equals(owner, that.owner) && Objects.equals(text, that.text);
+        return Objects.equals(ownerId, that.ownerId) && Objects.equals(text, that.text);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(owner, text);
+        return Objects.hash(ownerId, text);
+    }
+
+    public int getOwnerId() {
+        return ownerId;
+    }
+
+    public int getPostId() {
+        return postId;
     }
 }
