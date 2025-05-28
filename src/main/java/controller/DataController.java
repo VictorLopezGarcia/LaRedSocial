@@ -6,6 +6,7 @@ import model.PostType;
 import model.Usuario;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,12 +20,19 @@ public class DataController {
 
 
     private static final DataController INSTANCE = new DataController();
+    private final String commentsPath = "C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\comments.csv";
+    private final String postsPath = "C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\posts.csv";
+    private final String usersPath = "C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\users.csv";
     private final HashMap<Integer, Usuario> usuarios = new HashMap<>();
     private final HashMap<Integer, TreeSet<Post>> postsPorUsuario = new HashMap<>();
     private final HashMap<Integer, HashMap<Integer,TreeSet<Comentario>>> comentariosPorPost = new HashMap<>();
     private final HashMap<Integer, Integer[]> seguidoresPorUsuario = new HashMap<>();
     private Usuario currentUser;
     private final int MAX_WALL_POSTS = 10;
+
+
+    private DataController() {
+    }
 
     public Usuario getCurrentUser() {
         return currentUser;
@@ -34,30 +42,24 @@ public class DataController {
         this.currentUser = currentUser;
     }
 
-    private DataController() {
-    }
-
     public static DataController getInstance() {
         return INSTANCE;
     }
 
     public void fetchata() {
-
-
-
-        try(BufferedReader br = Files.newBufferedReader(Paths.get("C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\users.csv"), StandardCharsets.UTF_8)){
+        try(BufferedReader br = Files.newBufferedReader(Paths.get(usersPath), StandardCharsets.UTF_8)){
             loadUsers(br);
         } catch (IOException e) {
             System.err.println("Error al cargar Usuarios: " + e.getMessage());
         }
-        try (BufferedReader br = Files.newBufferedReader(Paths.get("C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\posts.csv"), StandardCharsets.UTF_8)) {
+        try (BufferedReader br = Files.newBufferedReader(Paths.get(postsPath), StandardCharsets.UTF_8)) {
             loadPosts(br);
         } catch (IOException e) {
             System.err.println("Error al cargar posts: " + e.getMessage());
         } catch (ParseException e) {
             System.err.println("Error al parsear fecha de post: " + e.getMessage());
         }
-        try(BufferedReader br = Files.newBufferedReader(Paths.get("C:\\Users\\victl\\OneDrive\\Documents\\LaRedSocial\\src\\main\\resources\\data\\comments.csv"), StandardCharsets.UTF_8)) {
+        try(BufferedReader br = Files.newBufferedReader(Paths.get(commentsPath), StandardCharsets.UTF_8)) {
             loadComments(br);
         } catch (IOException e) {
             System.err.println("Error al cargar comentarios: " + e.getMessage());
@@ -74,8 +76,8 @@ public class DataController {
                 System.err.println("Error: línea con formato incorrecto: " + linea);
                 continue;
             }
-            String nombre = partes[0].trim();
-            int id = Integer.parseInt(partes[1].trim());
+            int id = Integer.parseInt(partes[0].trim());
+            String nombre = partes[1].trim();
             int[] seguidores = partes.length > 2 ? Arrays.stream(partes[2].trim().split(","))
                     .mapToInt(Integer::parseInt).toArray() : new int[0];
             Usuario usuario = new Usuario(id, nombre);
@@ -100,7 +102,7 @@ public class DataController {
             String titulo = partes[2].trim();
             String fechaStr = partes[3].trim();
             PostType tipo = PostType.fromString(partes[4].trim());
-            String contenido = partes[5].trim();
+            String contenido = partes[5].trim().replace(",", "\n");
             Date fecha = new SimpleDateFormat("dd/MM/yyyy").parse(fechaStr);
             Post post = new Post(userId, postId, titulo, fecha, tipo, contenido);
             if (usuarios.containsKey(userId)) {
@@ -131,34 +133,103 @@ public class DataController {
         }
     }
 
+    public void addUser(Usuario usuario) {
+        if (!usuarios.containsKey(usuario.getId())) {
+            usuarios.put(usuario.getId(), usuario);
+            postsPorUsuario.put(usuario.getId(), new TreeSet<>());
+            seguidoresPorUsuario.put(usuario.getId(), new Integer[0]);
+            try {
+                saveUsersToCSV(usersPath);
+            } catch (IOException e) {
+                System.err.println("Error al guardar usuarios: " + e.getMessage());
+            }
+        }
+    }
+
     public void addPost(Post post) {
         int userId = post.getOwnerId();
         if (!postsPorUsuario.containsKey(userId)) {
             postsPorUsuario.put(userId, new TreeSet<>());
         }
-        postsPorUsuario.get(userId).add(post);
-    }
-
-    public String gerUserNameById(int id) {
-        Usuario usuario = usuarios.get(id);
-        if (usuario != null) {
-            return usuario.getNombre();
-        } else {
-            return "Usuario no encontrado";
+        if(postsPorUsuario.get(userId).add(post)){
+            try {
+                savePostsToCSV(postsPath);
+            } catch (IOException e) {
+                System.err.println("Error al guardar posts: " + e.getMessage());
+            }
         }
     }
 
-    public Usuario getUserById(int id) {
-        return usuarios.get(id);
+    public void addComment(Comentario comentario) {
+        int postId = comentario.getPostId();
+        int userId = comentario.getOwnerId();
+        if (!comentariosPorPost.containsKey(userId)) {
+            comentariosPorPost.put(userId, new HashMap<>());
+        }
+        HashMap<Integer, TreeSet<Comentario>> postComments = comentariosPorPost.get(userId);
+        if (!postComments.containsKey(postId)) {
+            postComments.put(postId, new TreeSet<>());
+        }
+        TreeSet<Comentario> comments = postComments.get(postId);
+        if (comments.add(comentario)) {
+            try {
+                saveCommentsToCSV(commentsPath);
+            } catch (IOException e) {
+                System.err.println("Error al guardar comentarios: " + e.getMessage());
+            }
+        }
     }
 
-    public Usuario getUserByName(String name) {
-        return usuarios.values().stream()
-                .filter(usuario -> usuario.getNombre().equalsIgnoreCase(name))
+    public boolean addFollower(int userId, int followerId) {
+        if (usuarios.containsKey(userId) && usuarios.containsKey(followerId)) {
+            Integer[] seguidores = seguidoresPorUsuario.get(userId);
+            if (Arrays.stream(seguidores).noneMatch(s -> s == followerId)) {
+                seguidoresPorUsuario.put(userId, Arrays.copyOf(seguidores, seguidores.length + 1));
+                seguidoresPorUsuario.get(userId)[seguidores.length] = followerId;
+                try {
+                    saveUsersToCSV(usersPath);
+                } catch (IOException e) {
+                    System.err.println("Error al guardar usuarios: " + e.getMessage());
+                }
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public boolean addFollower(String entrada) {
+        if (currentUser == null) {
+            return false;
+        }
+        Usuario usuarioFollow = getUsersIDontFollow().stream()
+                .filter(usuario -> usuario.getNombre().equalsIgnoreCase(entrada) && !usuario.equals(currentUser))
                 .findFirst()
                 .orElse(null);
+        if (usuarioFollow == null) {
+            return false;
+        }
+        return addFollower(currentUser.getId(), usuarioFollow.getId());
     }
 
+
+    public boolean deleteComment(Comentario comentario) {
+        if (comentariosPorPost.containsKey(comentario.getOwnerId())) {
+            HashMap<Integer, TreeSet<Comentario>> postComments = comentariosPorPost.get(comentario.getOwnerId());
+            if (postComments.containsKey(comentario.getPostId())) {
+                TreeSet<Comentario> comments = postComments.get(comentario.getPostId());
+                if (comments.remove(comentario)){
+                    try {
+                        saveCommentsToCSV(commentsPath);
+                    } catch (IOException e) {
+                        System.err.println("Error al guardar comentarios: " + e.getMessage());
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public void deletePost(int userId, int postId) {
         if (postsPorUsuario.containsKey(userId)) {
             TreeSet<Post> posts = postsPorUsuario.get(userId);
@@ -170,7 +241,13 @@ public class DataController {
                 }
             }
             if (postToRemove != null) {
-                posts.remove(postToRemove);
+                if(posts.remove(postToRemove)){
+                    try {
+                        savePostsToCSV(postsPath);
+                    } catch (IOException e) {
+                        System.err.println("Error al guardar posts: " + e.getMessage());
+                    }
+                }
             }
         }
     }
@@ -181,33 +258,40 @@ public class DataController {
         deletePost(userId, postId);
     }
 
-    public void addComment(int userId, int postId, Comentario comentario) {
-        if (postsPorUsuario.containsKey(userId)) {
-            TreeSet<Post> posts = postsPorUsuario.get(userId);
-            for (Post post : posts) {
-                if (post.getId() == postId) {
-                    comentariosPorPost.computeIfAbsent(userId, k -> new HashMap<>())
-                            .computeIfAbsent(postId, k -> new TreeSet<>()).add(comentario);
-                }
+    public boolean deleteFollower(int seguidorSeleccionado) {
+        if (currentUser == null) {
+            return false;
+        }
+        Integer[] seguidores = seguidoresPorUsuario.get(currentUser.getId());
+        if(getFollowers(currentUser.getId()).contains(usuarios.get(seguidorSeleccionado))) {
+            seguidoresPorUsuario.put(currentUser.getId(), Arrays.stream(seguidores)
+                    .filter(id -> id != seguidorSeleccionado)
+                    .toArray(Integer[]::new));
+            try {
+                saveUsersToCSV(usersPath);
+            } catch (IOException e) {
+                System.err.println("Error al guardar usuarios: " + e.getMessage());
             }
+            return true;
+        } else {
+            return false;
         }
     }
 
-    public void addComment(Comentario comentario) {
-        int userId = comentario.getOwnerId();
-        int postId = comentario.getPostId();
-        addComment(userId, postId, comentario);
+    public String getUserNameById(int id) {
+        Usuario usuario = usuarios.get(id);
+        if (usuario != null) {
+            return usuario.getNombre();
+        } else {
+            return "Usuario no encontrado";
+        }
     }
 
-    public boolean deleteComment(Comentario comentario) {
-        if (comentariosPorPost.containsKey(comentario.getOwnerId())) {
-            HashMap<Integer, TreeSet<Comentario>> postComments = comentariosPorPost.get(comentario.getOwnerId());
-            if (postComments.containsKey(comentario.getPostId())) {
-                TreeSet<Comentario> comments = postComments.get(comentario.getPostId());
-                return comments.remove(comentario);
-            }
-        }
-        return false;
+    public Usuario getUserByName(String name) {
+        return usuarios.values().stream()
+                .filter(usuario -> usuario.getNombre().equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(null);
     }
 
     public Post getPostById(int postId) {
@@ -223,14 +307,6 @@ public class DataController {
 
     public List<Post> getPostsByUserId(int userId) {
         return new ArrayList<>(postsPorUsuario.get(userId));
-    }
-
-    public List<Comentario> getCommentsByPost(int userId, int postId) {
-        if (comentariosPorPost.containsKey(userId)) {
-            HashMap<Integer, TreeSet<Comentario>> postComments = comentariosPorPost.get(userId);
-            return new ArrayList<>(postComments.get(postId));
-        }
-        return new ArrayList<>();
     }
 
     public List<Comentario> getCommentsByUserId(int userId) {
@@ -258,9 +334,6 @@ public class DataController {
         return wallPosts.stream().sorted().limit(MAX_WALL_POSTS).collect(Collectors.toList());
     }
 
-    public void removeComentario(Comentario comentario) {
-
-    }
 
     public List<Usuario> getFollowers(int userId) {
         if (seguidoresPorUsuario.containsKey(userId)) {
@@ -276,14 +349,14 @@ public class DataController {
     }
 
     public int getCommentsNumFromPost(int id) {
-        if (comentariosPorPost.containsKey(id)) {
-            HashMap<Integer, TreeSet<Comentario>> postComments = comentariosPorPost.get(id);
-            return postComments.values().stream()
-                    .mapToInt(TreeSet::size)
-                    .sum();
-        } else {
-            return 0;
+        int count = 0;
+        for (Map.Entry<Integer, HashMap<Integer, TreeSet<Comentario>>> entry : comentariosPorPost.entrySet()) {
+            HashMap<Integer, TreeSet<Comentario>> postComments = entry.getValue();
+            if (postComments.containsKey(id)) {
+                count += postComments.get(id).size();
+            }
         }
+        return count;
     }
 
     public List<Comentario> getCommentsfromPost(int postId) {
@@ -299,10 +372,6 @@ public class DataController {
 
     public int getUsersCount() {
         return usuarios.size();
-    }
-
-    public List<Usuario> getAllUsers() {
-        return new ArrayList<>(usuarios.values());
     }
 
     public List<Usuario> getUsersIDontFollow() {
@@ -326,46 +395,60 @@ public class DataController {
                 .orElse(0) + 1;
     }
 
-    public boolean addFollower(int id, int id1) {
-        if (usuarios.containsKey(id) && usuarios.containsKey(id1)) {
-            Integer[] seguidores = seguidoresPorUsuario.get(id);
-            if (Arrays.stream(seguidores).noneMatch(s -> s == id1)) {
-                seguidoresPorUsuario.put(id, Arrays.copyOf(seguidores, seguidores.length + 1));
-                seguidoresPorUsuario.get(id)[seguidores.length] = id1;
+    public int getNextUserId() {
+        return usuarios.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+    }
+
+
+    public void savePostsToCSV(String path) throws IOException {
+        try (BufferedWriter bw = Files.newBufferedWriter(Paths.get(path), StandardCharsets.UTF_8)) {
+            for (TreeSet<Post> posts : postsPorUsuario.values()) {
+                for (Post post : posts) {
+                    String linea = String.format("%d;%d;%s;%s;%s;%s",
+                            post.getOwnerId(),
+                            post.getId(),
+                            post.getTitle(),
+                            new SimpleDateFormat("dd/MM/yyyy").format(post.getDate()),
+                            post.getType().toString(),
+                            post.getContent().replace("\n", " "));
+                    bw.write(linea);
+                    bw.newLine();
+                }
             }
-            return true;
-        } else {
-            return false;
         }
     }
 
-    public boolean addFollower(String entrada) {
-        if (currentUser == null) {
-            return false;
+    public void saveCommentsToCSV(String path) throws IOException {
+        try (BufferedWriter bw = Files.newBufferedWriter(Paths.get(path), StandardCharsets.UTF_8)) {
+            for (HashMap<Integer, TreeSet<Comentario>> postComments : comentariosPorPost.values()) {
+                for (Map.Entry<Integer, TreeSet<Comentario>> entry : postComments.entrySet()) {
+                    for (Comentario comentario : entry.getValue()) {
+                        String linea = String.format("%d;%d;%s;%s",
+                                comentario.getOwnerId(),
+                                comentario.getPostId(),
+                                comentario.getText().replace("\n", " "),
+                                new SimpleDateFormat("dd/MM/yyyy").format(comentario.getDate()));
+                        bw.write(linea);
+                        bw.newLine();
+                    }
+                }
+            }
         }
-        Usuario usuarioFollow = getUsersIDontFollow().stream()
-                .filter(usuario -> usuario.getNombre().equalsIgnoreCase(entrada) && !usuario.equals(currentUser))
-                .findFirst()
-                .orElse(null);
-        if (usuarioFollow == null) {
-            return false;
-        }
-        return addFollower(usuarioFollow.getId(), usuarioFollow.getId());
     }
 
-    public boolean removeFollower(int seguidorSeleccionado) {
-        if (currentUser == null) {
-            return false;
+    public void saveUsersToCSV(String path) throws IOException {
+        try (BufferedWriter bw = Files.newBufferedWriter(Paths.get(path), StandardCharsets.UTF_8)) {
+            for (Usuario usuario : usuarios.values()) {
+                String linea = String.format("%d;%s;%s", usuario.getId(), usuario.getNombre(),
+                        Arrays.stream(seguidoresPorUsuario.get(usuario.getId()))
+                                .map(String::valueOf)
+                                .collect(Collectors.joining(",")));
+                bw.write(linea);
+                bw.newLine();
+            }
         }
-        Integer[] seguidores = seguidoresPorUsuario.get(currentUser.getId());
-        if(getFollowers(currentUser.getId()).contains(usuarios.get(seguidorSeleccionado))) {
-            seguidoresPorUsuario.put(currentUser.getId(), Arrays.stream(seguidores)
-                    .filter(id -> id != seguidorSeleccionado)
-                    .toArray(Integer[]::new));
-            return true;
-        } else {
-            return false;
-        }
-
     }
 }

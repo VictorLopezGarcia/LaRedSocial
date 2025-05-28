@@ -45,4 +45,19 @@ public enum PostType {
         return message;
     }
 
+    @Override
+    public String toString() {
+        switch (this) {
+            case VIDEO:
+                return "VIDEO";
+            case TEXT:
+                return "TEXT";
+            case IMAGE:
+                return "IMAGE";
+            case OTHER:
+                return "OTHER";
+            default:
+                throw new IllegalStateException("Tipo de post desconocido: " + this);
+        }
+    }
 }

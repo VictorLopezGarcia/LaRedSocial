@@ -179,7 +179,7 @@ public class ConsoleIn {
             removeFollower();
         } else {
             Usuario seguidorSeleccionado = seguidores.get(seleccion - 1);
-            if(dataController.removeFollower(seguidorSeleccionado.getId())) {
+            if(dataController.deleteFollower(seguidorSeleccionado.getId())) {
                 System.out.println("Seguidor eliminado correctamente: " + seguidorSeleccionado.getNombre());
             } else {
                 System.out.println("No se pudo eliminar el seguidor. Verifique que lo siga.");

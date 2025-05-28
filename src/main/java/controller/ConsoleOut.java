@@ -114,8 +114,7 @@ public class ConsoleOut {
     }
 
     private static void showAndAddFollower() {
-        List<Usuario> seguidores = DataController.getInstance().getFollowers(DataController.getInstance().getCurrentUser().getId());
-        if (seguidores.isEmpty() || seguidores.size() >= DataController.getInstance().getUsersCount()) {
+        if (DataController.getInstance().getUsersIDontFollow().isEmpty()) {
             System.out.println("No hay usuarios disponibles para seguir.");
             return;
         }
@@ -127,8 +126,12 @@ public class ConsoleOut {
     }
 
     private static void showUsers(List<Usuario> users, boolean addComment) {
+        if (users.isEmpty()) {
+            System.out.println("No hay usuarios disponibles.");
+            return;
+        }
         for (int i = 0; i < users.size(); i++) {
-            System.out.println(i + ". " + users.get(i).getNombre());
+            System.out.println((i + 1) + ". " + users.get(i).getNombre());
         }
         System.out.println("-----------------------");
         ConsoleIn.askShowUserProfile(users, addComment);

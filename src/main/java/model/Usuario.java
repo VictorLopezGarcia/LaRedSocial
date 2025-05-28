@@ -1,6 +1,8 @@
 package model;
 
-public class Usuario implements Comparable<Usuario> {
+import java.util.Objects;
+
+public class Usuario {
 
     private final int id;
     private final String nombre;
@@ -18,16 +20,18 @@ public class Usuario implements Comparable<Usuario> {
         return nombre;
     }
 
+    // En Usuario.java
     @Override
     public boolean equals(Object o) {
+        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Usuario usuario = (Usuario) o;
-        return nombre.equalsIgnoreCase(usuario.nombre);
+        return id == usuario.id;
     }
 
     @Override
-    public int compareTo(Usuario o) {
-        return this.nombre.compareTo(o.getNombre());
+    public int hashCode() {
+        return Objects.hash(id);
     }
 
     public int getId() {

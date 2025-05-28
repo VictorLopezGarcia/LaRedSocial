@@ -1,4 +1,5 @@
-Ana;1;2,3
-Juan;2;1,4
-Maria;3;1
-Pedro;4;3
+1;Ana;2,3
+2;Juan;1,4,2
+3;Maria;1
+4;Pedro;3
+5;Victor;3

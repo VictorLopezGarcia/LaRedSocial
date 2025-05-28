@@ -33,29 +33,32 @@ public class Comentario implements Comparable<Comentario>{
     }
 
     @Override
+    public String toString() {
+        return DataController.getInstance().getUserNameById(ownerId) + ", "+  Utils.formatFechaEspecial(date) + ": " + text;
+    }
+    @Override
     public int compareTo(Comentario o) {
         int cmp = o.date.compareTo(this.date);
-        if (cmp == 0) {
-            cmp = this.getText().compareTo(o.getText());
-        }
-        return cmp;
+        if (cmp != 0) return cmp;
+        cmp = this.text.compareTo(o.text);
+        if (cmp != 0) return cmp;
+        return Integer.compare(this.ownerId, o.ownerId);
     }
 
     @Override
-    public String toString() {
-        return DataController.getInstance().gerUserNameById(ownerId) + ", "+  Utils.formatFechaEspecial(date) + ": " + text;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
-        Comentario that = (Comentario) o;
-        return Objects.equals(ownerId, that.ownerId) && Objects.equals(text, that.text);
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof Comentario)) return false;
+        Comentario other = (Comentario) obj;
+        return ownerId == other.ownerId &&
+                postId == other.postId &&
+                Objects.equals(text, other.text) &&
+                Objects.equals(date, other.date);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ownerId, text);
+        return Objects.hash(ownerId, postId, text, date);
     }
 
     public int getOwnerId() {
@@ -64,5 +67,9 @@ public class Comentario implements Comparable<Comentario>{
 
     public int getPostId() {
         return postId;
+    }
+
+    public Object getDate() {
+        return date;
     }
 }
