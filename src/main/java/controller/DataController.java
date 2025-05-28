@@ -370,10 +370,6 @@ public class DataController {
         return comentarios.stream().sorted().collect(Collectors.toList());
     }
 
-    public int getUsersCount() {
-        return usuarios.size();
-    }
-
     public List<Usuario> getUsersIDontFollow() {
         if (currentUser == null) {
             return Collections.emptyList();
